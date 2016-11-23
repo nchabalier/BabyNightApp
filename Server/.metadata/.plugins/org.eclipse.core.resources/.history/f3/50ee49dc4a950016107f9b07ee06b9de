@@ -1,0 +1,77 @@
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+class JavaMultiServer {
+	public static void main(String[] args) throws IOException {
+
+		if (args.length != 1) {
+			System.err.println("Usage: java KKMultiServer <port number>");
+			System.exit(1);
+		}
+
+		final int portNumber = Integer.parseInt(args[0]);
+		final boolean listening = true;
+
+		try (ServerSocket serverSocket = new ServerSocket(portNumber)) {
+			while (listening) {
+				new ServerThread(serverSocket.accept()).start();
+			}
+		} catch (final IOException e) {
+			System.err.println("Could not listen on port " + portNumber);
+			System.exit(-1);
+		}
+	}
+}
+
+class ServerThread extends Thread {
+    private Socket socket = null;
+
+    public ServerThread(Socket socket) {
+        super("KKMultiServerThread");
+        this.socket = socket;
+    }
+    
+    public void run() {
+
+        try (
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+            BufferedReader bufferedReader = new BufferedReader(
+                new InputStreamReader(
+                    socket.getInputStream()));
+        ) {
+            String inputLine, outputLine;
+            //KnockKnockProtocol kkp = new KnockKnockProtocol();
+            //outputLine = kkp.processInput(null);
+            //out.println(outputLine);
+
+            while ((inputLine = bufferedReader.readLine()) != null) {
+				System.out.println(inputLine);
+
+				final String[] splited = inputLine.split("\\s+");
+
+				if ((splited.length == 2) && splited[0].equals("GPIO") && isInteger(splited[1])) {
+					final int GPIONumber = Integer.parseInt(splited[1]);
+					lightLED(GPIONumber, pins[GPIONumber]);
+				}
+
+				printWriter.println(line); // echo back to sender
+			}
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+public static boolean isInteger(String str) {
+	try {
+		final int d = Integer.parseInt(str);
+	} catch (final NumberFormatException nfe) {
+		return false;
+	}
+	return true;
+}

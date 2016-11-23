@@ -1,0 +1,75 @@
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+
+class JavaMultiServer {
+	public static void main(String[] args) throws IOException {
+
+		final int portNumber = 8000;
+		final boolean listening = true;
+
+		System.out.println("Port: " + portNumber);
+
+		try (ServerSocket serverSocket = new ServerSocket(portNumber)) {
+			while (listening) {
+				new ServerThread(serverSocket.accept()/* , pins */).start();
+			}
+		} catch (final IOException e) {
+			System.err.println("Could not listen on port " + portNumber);
+			System.exit(-1);
+		}
+	}
+}
+
+class ServerThread extends Thread {
+	private Socket socket = null;
+
+	public ServerThread(Socket socket) {
+		super("ServerThread");
+		this.socket = socket;
+	}
+
+	@Override
+	public void run() {
+
+		System.out.println("New client");
+
+		try (PrintWriter printWriter = new PrintWriter(this.socket.getOutputStream(), true);
+				BufferedReader bufferedReader = new BufferedReader(
+						new InputStreamReader(this.socket.getInputStream()));) {
+			String inputLine;
+			final String outputLine;
+			printWriter.println("TABLE 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24");
+			printWriter.println("TABLE 1 0 0 0 0 0 0 1 5 6 5 1 1 1 1 1 1 1 1 1 1 1 0 0 0");
+			printWriter.println("TABLE 2 0 0 1 5 6 5 1 1 1 1 1 0 0 0 0 1 1 1 1 1 1 0 0 0");
+			while ((inputLine = bufferedReader.readLine()) != null) {
+				System.out.println(inputLine);
+
+				final String[] splited = inputLine.split("\\s+");
+
+				if ((splited.length == 2) && splited[0].equals("GPIO") && isInteger(splited[1])) {
+					final int GPIONumber = Integer.parseInt(splited[1]);
+				}
+
+				printWriter.println(inputLine); // echo back to sender
+			}
+			this.socket.close();
+		} catch (final IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public static boolean isInteger(String str) {
+		try {
+			final int d = Integer.parseInt(str);
+		} catch (final NumberFormatException nfe) {
+			return false;
+		}
+		return true;
+	}
+
+}
